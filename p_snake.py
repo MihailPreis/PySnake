@@ -3,6 +3,7 @@
 import random
 from time import sleep
 from collections import deque
+from PyQt5.QtWidgets import *
 
 import pygame
 from pygame import *
@@ -22,11 +23,10 @@ class GameOverType:
 
 
 class Game:
-    def __init__(self, width=800, height=600):
-        self.tick_time = 1
-        self.different = 1  # TODO: finish him
-        self.wall_mode = True  # TODO: finish him
+    def __init__(self, width=800, height=600, wall_mode=True):
+        self.wall_mode = wall_mode
         self.pause = False
+        self.__restart = False
         self.game_over = GameOverType.NULL
 
         self.WIN_WIDTH = width
@@ -35,8 +35,8 @@ class Game:
         self.BACKGROUND_COLOR = "#000000"
         self.apple = False
 
-        self.BLOCK_WIDTH = 16  # / difficulty
-        self.BLOCK_HEIGHT = 16  # / difficulty
+        self.BLOCK_WIDTH = 16
+        self.BLOCK_HEIGHT = 16
         self.SNAKE_COLOR = "#FF6262"
         self.APPLE_COLOR = "#8db600"
 
@@ -44,7 +44,7 @@ class Game:
         self.level_width = self.WIN_WIDTH // self.BLOCK_WIDTH
         self.level_height = self.WIN_HEIGHT // self.BLOCK_HEIGHT
         self.level = [
-            [" " for _ in range(0, self.level_width)]
+            [" " for _ in range(0, self.level_width + 1)]
             for _ in range(0, self.level_height)
         ]
 
@@ -83,12 +83,20 @@ class Game:
         else:  # Move.LEFT
             x -= 1
 
-        if y not in range(self.level_height) \
-                or x not in range(self.level_width - 1):
+        if (
+                y not in range(self.level_height)
+                or x not in range(self.level_width)
+        ) and not self.wall_mode:
             self.game_over = GameOverType.OUT_OF_PLACE
         else:
             old_y, old_x = self.snake_path.popleft()
             self.level[old_y].pop(old_x)
+
+            if self.wall_mode:
+                if y not in range(self.level_height):
+                    y = 0 if y >= self.level_height else self.level_height - 1
+                elif x not in range(self.level_width):
+                    x = 0 if x >= self.level_width else self.level_width - 1
 
             point = self.level[y][x]
             if point == "x":
@@ -131,13 +139,18 @@ class Game:
                 msg1 if self.game_over == GameOverType.TOGGLE_SELF else msg2,
                 False, (255, 255, 255)
             )
+            message_restart = game_font.render(
+                "Press \"ENTER\" for a start new game.",
+                False, (255, 255, 255)
+            )
             points_hud = game_font.render(
                 f"Point: {self.snake_len - 10}", False, (255, 255, 255)
             )
 
             screen.blit(game_over_hud, (10, 10))
             screen.blit(message_hud, (10, 30))
-            screen.blit(points_hud, (10, 60))
+            screen.blit(message_restart, (10, 50))
+            screen.blit(points_hud, (10, 80))
         else:
             points_hud = game_font.render(
                 f"Point: {self.snake_len - 10}", False, (255, 255, 255)
@@ -156,42 +169,90 @@ class Game:
         while True:
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
-                    raise SystemExit("QUIT")
+                    raise SystemExit()
                 elif e.type == pygame.KEYDOWN:
                     if e.key == pygame.K_ESCAPE:
-                        raise SystemExit("QUIT")
+                        raise SystemExit()
                     elif e.key in [pygame.K_UP, pygame.K_w]:
                         if self.move_direction != Move.DOWN:
                             self.move_direction = Move.UP
-                            print("UP")
                     elif e.key in [pygame.K_RIGHT, pygame.K_d]:
                         if self.move_direction != Move.LEFT:
                             self.move_direction = Move.RIGHT
-                            print("RIGHT")
                     elif e.key in [pygame.K_DOWN, pygame.K_s]:
                         if self.move_direction != Move.UP:
                             self.move_direction = Move.DOWN
-                            print("DOWN")
                     elif e.key in [pygame.K_LEFT, pygame.K_a]:
                         if self.move_direction != Move.RIGHT:
                             self.move_direction = Move.LEFT
-                            print("LEFT")
                     elif e.key == pygame.K_PAUSE:
                         if not self.game_over:
                             self.pause = not self.pause
-                            print(f"PAUSE {self.pause}")
+                    elif e.key == pygame.K_RETURN:
+                        if self.pause \
+                                and self.game_over != GameOverType.NULL:
+                            pygame.quit()
+                            self.__restart = True
+                            break
+
+            if self.__restart:
+                break
 
             screen.blit(bg, (0, 0))
             if not self.apple:
                 self.get_apple()
-            self.hud(screen, game_font)
             if not self.pause:
                 self.move()
             self.render(screen)
+            self.hud(screen, game_font)
 
             pygame.display.update()
             sleep(.05)
 
 
+class Widget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.__ok = False
+        self.lbl = QLabel("Resolution", self)
+        self.combo = QComboBox(self)
+        self.combo.addItems(["800x600", "1024x768"])
+        self.lbl2 = QLabel("Wall mode", self)
+        self.check = QCheckBox(self)
+        self.button = QPushButton("Play", self)
+        self.init_ui()
+
+    def init_ui(self):
+        self.combo.move(65, 10)
+        self.lbl.move(10, 13)
+        self.check.move(65, 40)
+        self.lbl2.move(10, 40)
+        self.button.move(160, 20)
+        self.button.clicked.connect(self.ok_close)
+        self.setGeometry(300, 300, 250, 70)
+        self.setWindowTitle('PSnake - Conf')
+        self.show()
+
+    def ok_close(self):
+        self.__ok = True
+        self.close()
+
+    def get_params(self):
+        res = self.combo.currentText()
+        w_mode = self.check.isChecked()
+        return {"ok": self.__ok, "res": res.split("x"), "wall_mode": w_mode}
+
+
 if __name__ == "__main__":
-    Game()
+    import sys
+    app = QApplication(sys.argv)
+    ex = Widget()
+    app.exec_()
+    args = ex.get_params()
+    if args['ok']:
+        while True:
+            Game(
+                width=int(args['res'][0]),
+                height=int(args['res'][1]),
+                wall_mode=args['wall_mode']
+            )
