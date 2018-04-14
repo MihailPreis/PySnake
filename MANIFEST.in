@@ -1,0 +1,5 @@
+include game_font.ttf
+include README.md
+include PySnake.py
+include requirements.txt
+include game.ico
