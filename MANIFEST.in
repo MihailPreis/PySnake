@@ -3,3 +3,4 @@ include README.md
 include PySnake.py
 include requirements.txt
 include game.ico
+include LICENSE.md
