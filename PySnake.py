@@ -7,6 +7,7 @@ from datetime import datetime
 import pygame
 from PyQt5.QtWidgets import *
 from pygame import *
+import pygame
 
 __version__ = '1.0'
 
@@ -33,6 +34,7 @@ class Game:
         self.__restart = False
         self.game_over = GameOverType.NULL
         self._clock = datetime.now()
+        self._internal_clock = pygame.time.Clock()
 
         # game difficulty
         self._tick = {
@@ -248,8 +250,15 @@ class Game:
                 self.move()
             self.render(screen)
             self.hud(screen, game_font)
+            # TODO: move to settings
+            # fps = game_font.render(str(self._internal_clock.get_fps()),
+            #                        False,
+            #                        (255, 255, 255))
+            # screen.blit(fps, (100, 0))
 
             pygame.display.update()
+
+            self._internal_clock.tick(120)
 
 
 class Widget(QWidget):
