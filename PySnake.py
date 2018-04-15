@@ -174,20 +174,20 @@ class Game:
         if self.game_over != GameOverType.NULL:
             self.pause = True
             game_over_hud = game_font.render(
-                "GAME OVER", False, (255, 0, 0)
+                "GAME OVER", True, (255, 0, 0)
             )
             msg1 = "You have touched the tail."
             msg2 = "You have gone beyond the limits of the playing field."
             message_hud = game_font.render(
                 msg1 if self.game_over == GameOverType.TOGGLE_SELF else msg2,
-                False, (255, 255, 255)
+                True, (255, 255, 255)
             )
             message_restart = game_font.render(
                 "Press \"ENTER\" for a start new game.",
-                False, (255, 255, 255)
+                True, (255, 255, 255)
             )
             points_hud = game_font.render(
-                f"Point: {self.snake_len - 10}", False, (255, 255, 255)
+                f"Point: {self.snake_len - 10}", True, (255, 255, 255)
             )
 
             screen.blit(game_over_hud, (10, 10))
@@ -196,7 +196,7 @@ class Game:
             screen.blit(points_hud, (10, 80))
         else:
             points_hud = game_font.render(
-                f"Point: {self.snake_len - 10}", False, (255, 255, 255)
+                f"Point: {self.snake_len - 10}", True, (255, 255, 255)
             )
             screen.blit(points_hud, (5, 5))
 
@@ -210,6 +210,7 @@ class Game:
         bg = Surface((self.WIN_WIDTH, self.WIN_HEIGHT))
         bg.fill(Color(self.BACKGROUND_COLOR))
         game_font = pygame.font.Font('game_font.ttf', 18)
+        game_font.set_bold(True)
 
         while True:
             for e in pygame.event.get():
