@@ -3,9 +3,9 @@
 import random
 from collections import deque
 from datetime import datetime
+from tkinter import *
 
 import pygame
-from PyQt5.QtWidgets import *
 from pygame import *
 
 __version__ = '1.0'
@@ -27,7 +27,8 @@ class GameOverType:
 
 
 class Game:
-    def __init__(self, width=800, height=600, wall_mode=True, difficulty=1):
+    def __init__(self, width: int = 800, height: int = 600,
+                 wall_mode: bool = True, difficulty: int = 1):
         self.wall_mode = wall_mode
         self.pause = False
         self.__restart = False
@@ -76,6 +77,7 @@ class Game:
 
         :return:
         """
+
         def _():
             return random.randint(0, self.level_height - 1), \
                    random.randint(0, self.level_width - 1)
@@ -252,76 +254,75 @@ class Game:
             pygame.display.update()
 
 
-class Widget(QWidget):
+class SettingsGUI:
     def __init__(self):
-        super().__init__()
-        self.__ok = False
-        self.res_label = QLabel("Resolution", self)
-        self.res_combo = QComboBox(self)
-        self.res_combo.addItems(["800x600", "1024x768"])
-        self.dif_label = QLabel("Difficulty", self)
-        self.dif_combo = QComboBox(self)
-        self.dif_combo.addItems(["Easy", "Normal", "Hard"])
-        self.wm_label = QLabel("Wall mode", self)
-        self.wm_check = QCheckBox(self)
-        self.button = QPushButton("Play", self)
-        self.init_ui()
+        self.result = False
+        self.root = Tk()
+        self.root.title('PySnake')
+        self.root.iconbitmap('game.ico')
 
-    def init_ui(self):
-        self.res_combo.move(65, 10)
-        self.res_label.move(10, 13)
-        self.dif_combo.move(65, 40)
-        self.dif_combo.currentIndexChanged.connect(
-            self._difficulty_handler
+        Label(self.root, text="Resolution").grid(row=1, column=1)
+        self.res_combo = StringVar(self.root)
+        self.res_combo.set("800x600")
+        res_option = OptionMenu(self.root, self.res_combo,
+                                '800x600', '1024x768')
+        res_option.grid(row=1, column=2)
+
+        Label(self.root, text="Difficulty").grid(row=2, column=1)
+        self.dif_list = ["Easy", "Normal", "Hard"]
+        self.dif_combo = StringVar(self.root)
+        self.dif_combo.set(self.dif_list[0])
+        dif_option = OptionMenu(self.root, self.dif_combo, *self.dif_list,
+                                command=self._dif_handler)
+        dif_option.grid(row=2, column=2)
+
+        Label(self.root, text="Wall mode").grid(row=3, column=1)
+        self.var_check = BooleanVar()
+        self.wm_option = Checkbutton(self.root, variable=self.var_check)
+        self.wm_option.grid(row=3, column=2)
+
+        btn = Button(self.root, text="Play", width=30, height=5, bg="green")
+        btn.bind("<Button-1>", self.ok_close)
+        btn.grid(row=4, column=1, columnspan=2)
+
+    def call(self):
+        """Call the game settings window and wait for the "play" button
+        or exit.
+
+        :return: game settings dictionary
+        """
+        self.root.mainloop()
+
+        if not self.result:
+            exit()
+
+        _res = self.res_combo.get().split('x')
+        return dict(
+            width=int(_res[0]),
+            height=int(_res[1]),
+            wall_mode=self.var_check.get(),
+            difficulty=self.dif_list.index(self.dif_combo.get()) + 1
         )
-        self.dif_label.move(10, 43)
-        self.wm_check.move(65, 70)
-        self.wm_label.move(10, 70)
-        self.button.resize(60, 60)
-        self.button.move(170, 20)
-        self.button.clicked.connect(self.ok_close)
-        self.button.setFocus()
-        self.setGeometry(300, 300, 250, 100)
-        self.setWindowTitle('PSnake - Conf')
-        self.show()
 
-    def ok_close(self):
-        self.__ok = True
-        self.close()
+    def ok_close(self, event):
+        self.result = True
+        self.root.destroy()
 
-    def _difficulty_handler(self, difficulty):
-        if difficulty == 2:
-            self.wm_check.setChecked(False)
-            self.wm_check.setDisabled(True)
+    def _dif_handler(self, value):
+        if self.dif_list.index(value) > 1:
+            self.wm_option.deselect()
+            self.wm_option.config(state=DISABLED)
         else:
-            self.wm_check.setDisabled(False)
-
-    def get_params(self):
-        res = self.res_combo.currentText()
-        w_mode = self.wm_check.isChecked()
-        return {
-            "ok": self.__ok, "res": res.split("x"), "wall_mode": w_mode,
-            "difficulty": self.dif_combo.currentIndex()
-        }
+            self.wm_option.config(state=ACTIVE)
 
 
 if __name__ == "__main__":
-    import sys
     """       _
           .__(.)< (MEOW)
     ~~~~~~~\___)~~~~~~~~
      ~  ~ ~   ~ ~    ~ 
     """
-
-    app = QApplication(sys.argv)
-    ex = Widget()
-    app.exec_()
-    args = ex.get_params()
-    if args['ok']:
-        while True:
-            Game(
-                width=int(args['res'][0]),
-                height=int(args['res'][1]),
-                wall_mode=args['wall_mode'],
-                difficulty=int(args['difficulty']) + 1
-            )
+    config_window = SettingsGUI()
+    game_args = config_window.call()
+    while True:  # in case of game over, start game again
+        Game(**game_args)
