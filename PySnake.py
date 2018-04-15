@@ -84,8 +84,7 @@ class Game:
         while self.level[y][x] == ".":
             y, x = _()
 
-        self.level[y].pop(x)
-        self.level[y].insert(x, "x")
+        self.level[y][x] = 'x'
         self.apple = True
 
     def move(self):
@@ -117,7 +116,7 @@ class Game:
             self.game_over = GameOverType.OUT_OF_PLACE
         else:
             old_y, old_x = self.snake_path.popleft()
-            self.level[old_y].pop(old_x)
+            self.level[old_y][old_x] = ''
 
             if self.wall_mode:
                 # we implement an infinite-looped playing field
@@ -131,16 +130,15 @@ class Game:
                 # if you ate an Apple, increase the length of the snake
                 self.snake_len += 1
                 self.snake_path.appendleft((old_y, old_x))
-                self.level[old_y].insert(old_x, ".")
+                self.level[old_y][old_x] = "."
                 self.apple = False
             elif point == ".":
                 # if you came across your body
                 self.game_over = GameOverType.TOGGLE_SELF
             else:
-                self.level[old_y].insert(old_x, " ")
+                self.level[old_y][old_x] = " "
 
-            self.level[y].pop(x)
-            self.level[y].insert(x, ".")
+            self.level[y][x] = '.'
             self.snake_path.append((y, x))
 
     def render(self, screen):
