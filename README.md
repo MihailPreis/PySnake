@@ -5,12 +5,13 @@ System requirements
 -------------------
  - Python 3.6.x
 
-How to play
------------
-1. Install requirements `pip install -r requirements.txt`
-1. Run ``python PySnake.py``
-2. ?????
-3. PROFIT!1
+Deploy
+------
+1. Get a Python 3.6.x `venv` or global system version
+2. Install requirements: `pip install -r requirements.txt`
+3. Run: ``python PySnake.py``
+4. ?????
+5. PROFIT!1
 
 Keys
 ----
@@ -21,9 +22,3 @@ Keys
  - <kbd>ESC</kbd> - exit game
  - <kbd>PAUSE</kbd> - pause/start game
  - <kbd>ENTER</kbd> - in case of game over, start game again
-
-TODO
-----
- - fix wall-mod (move left)
- - fix snake body shift (quick turns)
- - exclude Qt5
