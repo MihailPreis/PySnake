@@ -5,7 +5,6 @@ from collections import deque
 from datetime import datetime
 from tkinter import *
 
-import pygame
 from pygame import *
 import pygame
 
