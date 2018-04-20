@@ -289,7 +289,9 @@ class SettingsGUI:
         self.wm_option.grid(row=3, column=2)
 
         btn = Button(self.root, text="Play", width=30, height=5, bg="green")
+        btn.focus_set()
         btn.bind("<Button-1>", self.ok_close)
+        self.root.bind("<Return>", self.ok_close)
         btn.grid(row=4, column=1, columnspan=2)
 
     def call(self):
