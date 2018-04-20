@@ -67,6 +67,7 @@ class Game:
         self.snake_path = deque()
         self.snake_len = 10
         self.move_direction = Move.RIGHT
+        self._tmp_move = Move.RIGHT
         for point in range(self.snake_len):
             self.level[self.level_height // 2].pop(point)
             self.level[self.level_height // 2].insert(point, ".")
@@ -91,6 +92,10 @@ class Game:
         self.level[y][x] = 'x'
         self.apple = True
 
+    @property
+    def need_tick(self):
+        return (datetime.now() - self._clock).total_seconds() > self._tick
+
     def move(self):
         """Implements the movement of the snake relative to the current
         direction and time of the tick (difficulty).
@@ -98,8 +103,9 @@ class Game:
         :return:
         """
         # if not enough time has passed...
-        if (datetime.now() - self._clock).total_seconds() < self._tick:
+        if not self.need_tick:
             return
+        self.move_direction = self._tmp_move
 
         self._clock = datetime.now()
 
@@ -213,6 +219,9 @@ class Game:
         game_font.set_bold(True)
 
         while True:
+            # #1 we need this to avoid turning two times in one tick (this can
+            # happen if user will press two buttons rapidly)
+            move = self._tmp_move
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
                     raise SystemExit()
@@ -221,16 +230,16 @@ class Game:
                         raise SystemExit()
                     elif e.key in [pygame.K_UP, pygame.K_w]:
                         if self.move_direction != Move.DOWN:
-                            self.move_direction = Move.UP
+                            move = Move.UP
                     elif e.key in [pygame.K_RIGHT, pygame.K_d]:
                         if self.move_direction != Move.LEFT:
-                            self.move_direction = Move.RIGHT
+                            move = Move.RIGHT
                     elif e.key in [pygame.K_DOWN, pygame.K_s]:
                         if self.move_direction != Move.UP:
-                            self.move_direction = Move.DOWN
+                            move = Move.DOWN
                     elif e.key in [pygame.K_LEFT, pygame.K_a]:
                         if self.move_direction != Move.RIGHT:
-                            self.move_direction = Move.LEFT
+                            move = Move.LEFT
                     elif e.key == pygame.K_PAUSE:
                         if not self.game_over:
                             self.pause = not self.pause
@@ -240,6 +249,8 @@ class Game:
                             pygame.quit()
                             self.__restart = True
                             break
+
+            self._tmp_move = move
 
             if self.__restart:
                 break
