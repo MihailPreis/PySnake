@@ -1,12 +1,13 @@
 #!/usr/bin/env python3.6
 # -*- coding: utf-8 -*-
+import platform
 import random
 from collections import deque
 from datetime import datetime
 from tkinter import *
 
-from pygame import *
 import pygame
+from pygame import *
 
 __version__ = '1.0'
 
@@ -266,7 +267,10 @@ class SettingsGUI:
         self.result = False
         self.root = Tk()
         self.root.title('PySnake')
-        self.root.iconbitmap('game.ico')
+
+        # TODO: Undefined behavior on Linux
+        if platform.system() != "Linux":
+            self.root.iconbitmap('game.ico')
 
         Label(self.root, text="Resolution").grid(row=1, column=1)
         self.res_combo = StringVar(self.root)
@@ -331,7 +335,7 @@ if __name__ == "__main__":
     ~~~~~~~\___)~~~~~~~~
      ~  ~ ~   ~ ~    ~ 
     """
-    config_window = SettingsGUI()
-    game_args = config_window.call()
     while True:  # in case of game over, start game again
+        config_window = SettingsGUI()
+        game_args = config_window.call()
         Game(**game_args)
