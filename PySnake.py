@@ -1,15 +1,27 @@
 #!/usr/bin/env python3.6
 # -*- coding: utf-8 -*-
+import argparse
 import platform
 import random
 from collections import deque
 from datetime import datetime
 from tkinter import *
 
-import pygame
-from pygame import *
+try:
+    import pygame
+    from pygame import *
+except ImportError:
+    raise SystemExit("Please install PyGame==1.9.3 with PIP.")
 
-__version__ = '1.0'
+__version__ = '1.1'
+RED_COLOR = "#FF6262"
+GREEN_COLOR = "#8db600"
+BLACK_COLOR = "#000000"
+TICKS = {
+    1: .08,
+    2: .05,
+    3: .03
+}
 
 
 class Move:
@@ -28,8 +40,9 @@ class GameOverType:
 
 
 class Game:
-    def __init__(self, width: int = 800, height: int = 600,
+    def __init__(self, context, width: int = 800, height: int = 600,
                  wall_mode: bool = True, difficulty: int = 1):
+        self.options = context
         self.wall_mode = wall_mode
         self.pause = False
         self.__restart = False
@@ -38,22 +51,18 @@ class Game:
         self._internal_clock = pygame.time.Clock()
 
         # game difficulty
-        self._tick = {
-            1: .1,
-            2: .05,
-            3: .03
-        }.get(difficulty)
+        self._tick = TICKS.get(difficulty)
 
         self.WIN_WIDTH = width
         self.WIN_HEIGHT = height
         self.DISPLAY = (self.WIN_WIDTH, self.WIN_HEIGHT)
-        self.BACKGROUND_COLOR = "#000000"
+        self.BACKGROUND_COLOR = BLACK_COLOR
         self.apple = False
 
         self.BLOCK_WIDTH = 16
         self.BLOCK_HEIGHT = 16
-        self.SNAKE_COLOR = "#FF6262"
-        self.APPLE_COLOR = "#8db600"
+        self.SNAKE_COLOR = RED_COLOR if difficulty < 3 else GREEN_COLOR
+        self.APPLE_COLOR = GREEN_COLOR if difficulty < 3 else RED_COLOR
 
         # create level
         self.level_width = self.WIN_WIDTH // self.BLOCK_WIDTH
@@ -93,7 +102,7 @@ class Game:
         self.apple = True
 
     @property
-    def need_tick(self):
+    def is_tick(self):
         return (datetime.now() - self._clock).total_seconds() > self._tick
 
     def move(self):
@@ -103,7 +112,7 @@ class Game:
         :return:
         """
         # if not enough time has passed...
-        if not self.need_tick:
+        if not self.is_tick:
             return
         self.move_direction = self._tmp_move
 
@@ -177,6 +186,14 @@ class Game:
         :param game_font: font file io
         :return:
         """
+        if self.options.fps:
+            fps_hud = game_font.render(
+                f"{int(self._internal_clock.get_fps())}",
+                True, (150, 150, 150)
+            )
+            fps_rect = fps_hud.get_rect()
+            screen.blit(fps_hud, (self.WIN_WIDTH - fps_rect.right - 2, 0))
+
         if self.game_over != GameOverType.NULL:
             self.pause = True
             game_over_hud = game_font.render(
@@ -200,6 +217,15 @@ class Game:
             screen.blit(message_hud, (10, 30))
             screen.blit(message_restart, (10, 50))
             screen.blit(points_hud, (10, 80))
+        elif self.pause:
+            pause_hud = game_font.render(
+                f"PAUSE", True, (255, 255, 255)
+            )
+            pause_rect = pause_hud.get_rect()
+            screen.blit(pause_hud, (
+                self.WIN_WIDTH / 2 - pause_rect.centerx,
+                self.WIN_HEIGHT / 2 - pause_rect.centery
+            ))
         else:
             points_hud = game_font.render(
                 f"Point: {self.snake_len - 10}", True, (255, 255, 255)
@@ -262,14 +288,7 @@ class Game:
                 self.move()
             self.render(screen)
             self.hud(screen, game_font)
-            # TODO: move to settings
-            # fps = game_font.render(str(self._internal_clock.get_fps()),
-            #                        False,
-            #                        (255, 255, 255))
-            # screen.blit(fps, (100, 0))
-
             pygame.display.update()
-
             self._internal_clock.tick(120)
 
 
@@ -328,7 +347,7 @@ class SettingsGUI:
             difficulty=self.dif_list.index(self.dif_combo.get()) + 1
         )
 
-    def ok_close(self, event):
+    def ok_close(self, _):
         self.result = True
         self.root.destroy()
 
@@ -346,7 +365,12 @@ if __name__ == "__main__":
     ~~~~~~~\___)~~~~~~~~
      ~  ~ ~   ~ ~    ~ 
     """
+    parser = argparse.ArgumentParser(description="Hi")
+    parser.add_argument('-f', '--fps', dest='fps', action='store_true',
+                        help='Display FPS')
+    context = parser.parse_args()
+
     while True:  # in case of game over, start game again
         config_window = SettingsGUI()
         game_args = config_window.call()
-        Game(**game_args)
+        Game(context, **game_args)
