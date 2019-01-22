@@ -3,6 +3,7 @@
 import argparse
 import platform
 import random
+import time as t
 from collections import deque
 from datetime import datetime
 from tkinter import *
@@ -49,6 +50,10 @@ class Game:
         self.game_over = GameOverType.NULL
         self._clock = datetime.now()
         self._internal_clock = pygame.time.Clock()
+        self.timer = 0
+        self._timer = 0
+        self.ptimer = 0
+        self._ptimer = 0
 
         # game difficulty
         self._tick = TICKS.get(difficulty)
@@ -212,25 +217,38 @@ class Game:
             points_hud = game_font.render(
                 f"Point: {self.snake_len - 10}", True, (255, 255, 255)
             )
+            timer_hud = game_font.render(
+                f"Time: {t.strftime('%M:%S', t.gmtime(self.timer))}",
+                True, (255, 255, 255)
+            )
 
             screen.blit(game_over_hud, (10, 10))
             screen.blit(message_hud, (10, 30))
             screen.blit(message_restart, (10, 50))
             screen.blit(points_hud, (10, 80))
-        elif self.pause:
-            pause_hud = game_font.render(
-                f"PAUSE", True, (255, 255, 255)
-            )
-            pause_rect = pause_hud.get_rect()
-            screen.blit(pause_hud, (
-                self.WIN_WIDTH / 2 - pause_rect.centerx,
-                self.WIN_HEIGHT / 2 - pause_rect.centery
-            ))
+            screen.blit(timer_hud, (10, 100))
         else:
             points_hud = game_font.render(
-                f"Point: {self.snake_len - 10}", True, (255, 255, 255)
+                f"Point: {self.snake_len - 10}", True,
+                (150, 150, 150) if self.pause else (255, 255, 255)
             )
-            screen.blit(points_hud, (5, 5))
+            screen.blit(points_hud, (5, 0))
+
+            timer_hud = game_font.render(
+                t.strftime('%M:%S', t.gmtime(self.timer)),
+                True, (150, 150, 150) if self.pause else (255, 255, 255)
+            )
+            screen.blit(timer_hud, (5, 20))
+
+            if self.pause:
+                pause_hud = game_font.render(
+                    f"PAUSE", True, (255, 255, 255)
+                )
+                pause_rect = pause_hud.get_rect()
+                screen.blit(pause_hud, (
+                    self.WIN_WIDTH / 2 - pause_rect.centerx,
+                    self.WIN_HEIGHT / 2 - pause_rect.centery
+                ))
 
     def main(self):
         """main game loop"""
@@ -243,17 +261,20 @@ class Game:
         bg.fill(Color(self.BACKGROUND_COLOR))
         game_font = pygame.font.Font('game_font.ttf', 18)
         game_font.set_bold(True)
+        self._timer = t.time()
 
         while True:
             # #1 we need this to avoid turning two times in one tick (this can
             # happen if user will press two buttons rapidly)
             move = self._tmp_move
+
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
                     raise SystemExit()
                 elif e.type == pygame.KEYDOWN:
                     if e.key == pygame.K_ESCAPE:
-                        raise SystemExit()
+                        self.__restart = True
+                        break
                     elif e.key in [pygame.K_UP, pygame.K_w]:
                         if self.move_direction != Move.DOWN:
                             move = Move.UP
@@ -266,15 +287,16 @@ class Game:
                     elif e.key in [pygame.K_LEFT, pygame.K_a]:
                         if self.move_direction != Move.RIGHT:
                             move = Move.LEFT
-                    elif e.key == pygame.K_PAUSE:
+                    elif e.key in [pygame.K_PAUSE, pygame.K_SPACE]:
                         if not self.game_over:
-                            self.pause = not self.pause
+                            self._change_pause()
                     elif e.key == pygame.K_RETURN:
                         if self.pause \
                                 and self.game_over != GameOverType.NULL:
-                            pygame.quit()
                             self.__restart = True
                             break
+                        elif self.pause:
+                            self._change_pause()
 
             self._tmp_move = move
 
@@ -285,11 +307,21 @@ class Game:
             if not self.apple:
                 self.get_apple()
             if not self.pause:
+                self.timer = t.time() - self._timer - self.ptimer
                 self.move()
             self.render(screen)
             self.hud(screen, game_font)
             pygame.display.update()
             self._internal_clock.tick(120)
+
+        pygame.quit()
+
+    def _change_pause(self):
+        self.pause = not self.pause
+        if self.pause:
+            self._ptimer = t.time()
+        else:
+            self.ptimer += t.time() - self._ptimer
 
 
 class SettingsGUI:
