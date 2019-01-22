@@ -6,6 +6,7 @@ import random
 import time as t
 from collections import deque
 from datetime import datetime
+from itertools import repeat
 from tkinter import *
 
 try:
@@ -42,10 +43,12 @@ class GameOverType:
 
 class Game:
     def __init__(self, context, width: int = 800, height: int = 600,
-                 wall_mode: bool = True, difficulty: int = 1):
+                 wall_mode: bool = True, max_apples: int = 1,
+                 difficulty: int = 1):
         self.options = context
         self.wall_mode = wall_mode
         self.pause = False
+        self.max_apples = max_apples
         self.__restart = False
         self.game_over = GameOverType.NULL
         self._clock = datetime.now()
@@ -62,7 +65,7 @@ class Game:
         self.WIN_HEIGHT = height
         self.DISPLAY = (self.WIN_WIDTH, self.WIN_HEIGHT)
         self.BACKGROUND_COLOR = BLACK_COLOR
-        self.apple = False
+        self.apples_counter = 0
 
         self.BLOCK_WIDTH = 16
         self.BLOCK_HEIGHT = 16
@@ -100,11 +103,11 @@ class Game:
                    random.randint(0, self.level_width - 1)
 
         y, x = _()
-        while self.level[y][x] == ".":
+        while self.level[y][x] in [".", "x"]:
             y, x = _()
 
         self.level[y][x] = 'x'
-        self.apple = True
+        self.apples_counter += 1
 
     @property
     def is_tick(self):
@@ -155,7 +158,7 @@ class Game:
                 self.snake_len += 1
                 self.snake_path.appendleft((old_y, old_x))
                 self.level[old_y][old_x] = "."
-                self.apple = False
+                self.apples_counter -= 1
             elif point == ".":
                 # if you came across your body
                 self.game_over = GameOverType.TOGGLE_SELF
@@ -304,8 +307,8 @@ class Game:
                 break
 
             screen.blit(bg, (0, 0))
-            if not self.apple:
-                self.get_apple()
+            if self.apples_counter < self.max_apples:
+                repeat(self.get_apple(), self.max_apples - self.apples_counter)
             if not self.pause:
                 self.timer = t.time() - self._timer - self.ptimer
                 self.move()
@@ -349,16 +352,24 @@ class SettingsGUI:
                                 command=self._dif_handler)
         dif_option.grid(row=2, column=2)
 
-        Label(self.root, text="Wall mode").grid(row=3, column=1)
+        Label(self.root, text="Apples count").grid(row=3, column=1)
+        self.ap_count_list = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+        self.ap_count_combo = StringVar(self.root)
+        self.ap_count_combo.set(self.ap_count_list[0])
+        ap_count_option = OptionMenu(self.root, self.ap_count_combo,
+                                     *self.ap_count_list)
+        ap_count_option.grid(row=3, column=2)
+
+        Label(self.root, text="Wall mode").grid(row=4, column=1)
         self.var_check = BooleanVar()
         self.wm_option = Checkbutton(self.root, variable=self.var_check)
-        self.wm_option.grid(row=3, column=2)
+        self.wm_option.grid(row=4, column=2)
 
         btn = Button(self.root, text="Play", width=30, height=5, bg="green")
         btn.focus_set()
         btn.bind("<Button-1>", self.ok_close)
         self.root.bind("<Return>", self.ok_close)
-        btn.grid(row=4, column=1, columnspan=2)
+        btn.grid(row=5, column=1, columnspan=2)
 
     def call(self):
         """Call the game settings window and wait for the "play" button
@@ -376,6 +387,7 @@ class SettingsGUI:
             width=int(_res[0]),
             height=int(_res[1]),
             wall_mode=self.var_check.get(),
+            max_apples=self.ap_count_list.index(self.ap_count_combo.get()) + 1,
             difficulty=self.dif_list.index(self.dif_combo.get()) + 1
         )
 
